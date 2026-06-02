@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Mic, Activity, HeartPulse, MapPin, Wind, Footprints, PersonStanding, AlertOctagon, Heart } from "lucide-react";
+import { Mic, Activity, HeartPulse, MapPin, Wind, Footprints, PersonStanding, AlertOctagon, Heart, X, Compass } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { StatusBadge } from "@/components/status-badge";
 import { SOSButton } from "@/components/sos-button";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSafetySignals } from "@/hooks/use-safety-signals";
-import { useContacts, useIncidents, useSettings } from "@/hooks/use-persistent";
+import { useContacts, useIncidents, useSettings, useLocation } from "@/hooks/use-persistent";
 import type { Incident, Scenario } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard")({
@@ -36,7 +36,9 @@ function Dashboard() {
   const { settings } = useSettings();
   const { contacts } = useContacts();
   const { incidents, add } = useIncidents();
+  const { location: userLocation } = useLocation();
   const [enabled] = useState(true);
+  const [showMap, setShowMap] = useState(false);
   const { samples, latest, status, scenario, setScenario } = useSafetySignals({
     thresholds: settings.thresholds,
     enabled,
@@ -75,7 +77,7 @@ function Dashboard() {
       trigger,
       status: "active",
       peakScore,
-      location: { lat: 40.7128, lng: -74.006, label: "Approx. last known location" },
+      location: { lat: userLocation.lat, lng: userLocation.lng, label: userLocation.label || "Last known location" },
       signalTrace: samples.slice(-30),
       alerts,
     };
@@ -132,14 +134,80 @@ function Dashboard() {
                 series={series.bpm}
                 tone={latest.bpm > settings.thresholds.bpm ? "destructive" : "success"}
               />
-              <SignalTile
-                label="Location"
-                value="Live"
-                Icon={MapPin}
-                series={series.score}
-                tone="primary"
-              />
+              <Card
+                className="overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary/30"
+                onClick={() => setShowMap(!showMap)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-secondary text-primary">
+                      <MapPin className="h-4 w-4" />
+                    </span>
+                    <div className="flex-1">
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground">Location</div>
+                      <div className="font-display text-xl font-semibold">
+                        Live
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-[10px] text-muted-foreground truncate">
+                    {userLocation.lat !== 0 || userLocation.lng !== 0
+                      ? `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`
+                      : "Tap to view"}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Expandable Location Map Panel */}
+            {showMap && (
+              <Card className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" /> Your Current Location
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowMap(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {userLocation.lat !== 0 || userLocation.lng !== 0 ? (
+                    <>
+                      <div className="relative w-full aspect-[2.2/1] overflow-hidden rounded-xl border border-border shadow-inner">
+                        <iframe
+                          title="Current Location Map"
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          scrolling="no"
+                          marginHeight={0}
+                          marginWidth={0}
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${userLocation.lng - 0.012}%2C${userLocation.lat - 0.006}%2C${userLocation.lng + 0.012}%2C${userLocation.lat + 0.006}&layer=mapnik&marker=${userLocation.lat}%2C${userLocation.lng}`}
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div>
+                          <div className="font-medium">{userLocation.label || "Last known location"}</div>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Compass className="h-3 w-3 animate-spin text-primary" />
+                          Live tracking
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      Location not configured. Visit Settings to enable GPS.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>

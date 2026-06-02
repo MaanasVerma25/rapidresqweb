@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadJSON, saveJSON } from "@/lib/storage";
-import { DEFAULT_SETTINGS, SAMPLE_CONTACTS, STORAGE_KEYS } from "@/lib/defaults";
-import type { Contact, Incident, Settings } from "@/lib/types";
+import { DEFAULT_SETTINGS, SAMPLE_CONTACTS, DEFAULT_LOCATION, STORAGE_KEYS } from "@/lib/defaults";
+import type { Contact, Incident, Settings, UserLocation } from "@/lib/types";
 
 export function useContacts() {
   const [contacts, setContacts] = useState<Contact[]>(() =>
@@ -52,3 +52,12 @@ export function useSettings() {
   useEffect(() => saveJSON(STORAGE_KEYS.settings, settings), [settings]);
   return { settings, setSettings };
 }
+
+export function useLocation() {
+  const [location, setLocation] = useState<UserLocation>(() =>
+    loadJSON<UserLocation>(STORAGE_KEYS.location, DEFAULT_LOCATION),
+  );
+  useEffect(() => saveJSON(STORAGE_KEYS.location, location), [location]);
+  return { location, setLocation };
+}
+

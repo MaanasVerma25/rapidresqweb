@@ -1,4 +1,4 @@
-import type { Settings, Contact } from "./types";
+import type { Settings, Contact, UserLocation } from "./types";
 
 export const DEFAULT_SETTINGS: Settings = {
   profile: { name: "", medicalNote: "", bloodType: "" },
@@ -11,8 +11,15 @@ export const SAMPLE_CONTACTS: Contact[] = [
   { id: "c2", name: "Aisha", phone: "+1 555 0102", relationship: "Best friend" },
 ];
 
+export const DEFAULT_LOCATION: UserLocation = {
+  lat: 0,
+  lng: 0,
+  label: "Not configured",
+};
+
 export const STORAGE_KEYS = {
   contacts: "rapidresq:contacts",
   incidents: "rapidresq:incidents",
   settings: "rapidresq:settings",
+  location: "rapidresq:location",
 } as const;

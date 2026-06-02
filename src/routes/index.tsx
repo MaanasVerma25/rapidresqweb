@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { useContacts, useSettings } from "@/hooks/use-persistent";
+import { useContacts, useSettings, useLocation } from "@/hooks/use-persistent";
 import type { Contact } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -64,6 +64,7 @@ function Landing() {
   // 2. Load persistent states
   const { settings, setSettings } = useSettings();
   const { contacts, upsert, remove, setPrimary } = useContacts();
+  const { setLocation: persistLocation } = useLocation();
 
   // 3. Wizard states
   const [step, setStep] = useState(0); // 0 is landing, 1-4 are steps
@@ -165,13 +166,13 @@ function Landing() {
     setSettings(formSettings);
     
     // 2. Save contacts to persistent storage
-    // Clear existing contacts in localstorage and re-upsert all from our wizard
-    // We can do this by executing remove/upsert on the hook.
-    // Since hook modifies state directly, let's remove everything first
     contacts.forEach((c) => remove(c.id));
     localContacts.forEach((c) => upsert(c));
     
-    // 3. Set onboarded in localStorage
+    // 3. Persist GPS location
+    persistLocation(coords);
+    
+    // 4. Set onboarded in localStorage
     localStorage.setItem("rapidresq:onboarded", "true");
     setIsOnboarded(true);
     
@@ -406,6 +407,27 @@ function Landing() {
                   placeholder="e.g. Main Street, New York" 
                 />
               </div>
+            </div>
+          )}
+
+          {(locationStatus === "granted" || locationStatus === "denied") && (
+            <div className="w-full mt-4 space-y-2">
+              <div className="relative w-full aspect-[2/1] overflow-hidden rounded-2xl border border-border shadow-inner">
+                <iframe
+                  title="User Location Map"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  scrolling="no"
+                  marginHeight={0}
+                  marginWidth={0}
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.015}%2C${coords.lat - 0.008}%2C${coords.lng + 0.015}%2C${coords.lat + 0.008}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`}
+                  className="w-full h-full filter saturate-[0.85] contrast-[0.95]"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                <Compass className="h-3 w-3 animate-spin-slow text-primary" /> Map updates automatically in real-time.
+              </p>
             </div>
           )}
         </div>

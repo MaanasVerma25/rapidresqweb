@@ -37,3 +37,9 @@ export type Settings = {
   thresholds: { audio: number; motion: number; bpm: number };
   channels: { sms: boolean; whatsapp: boolean; inapp: boolean };
 };
+
+export type UserLocation = {
+  lat: number;
+  lng: number;
+  label: string;
+};
