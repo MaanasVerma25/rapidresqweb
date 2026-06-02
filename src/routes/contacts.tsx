@@ -55,15 +55,30 @@ function ContactsPage() {
           <CardContent className="grid gap-4 p-6 sm:grid-cols-[1fr_1fr_1fr_auto]">
             <div className="space-y-1.5">
               <Label htmlFor="n">Name</Label>
-              <Input id="n" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Mom" />
+              <Input
+                id="n"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Mom"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="p">Phone</Label>
-              <Input id="p" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1 555 0100" />
+              <Input
+                id="p"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+1 555 0100"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="r">Relationship</Label>
-              <Input id="r" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} placeholder="Family / Friend" />
+              <Input
+                id="r"
+                value={form.relationship}
+                onChange={(e) => setForm({ ...form, relationship: e.target.value })}
+                placeholder="Family / Friend"
+              />
             </div>
             <Button onClick={add} className="self-end">
               <Plus className="mr-1 h-4 w-4" /> Add
@@ -73,7 +88,11 @@ function ContactsPage() {
 
         <div className="space-y-3">
           {contacts.length === 0 && (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">No contacts yet.</CardContent></Card>
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                No contacts yet.
+              </CardContent>
+            </Card>
           )}
           {contacts.map((c) => (
             <Card key={c.id}>
@@ -85,7 +104,9 @@ function ContactsPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{c.name}</span>
                     {c.primary && (
-                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Primary</span>
+                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
+                        Primary
+                      </span>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

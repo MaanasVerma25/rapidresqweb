@@ -111,7 +111,12 @@
   --sidebar-border: oklch(0.9 0.02 120);
   --sidebar-ring: oklch(0.46 0.11 160);
 
-  --gradient-hero: linear-gradient(135deg, oklch(0.46 0.11 160) 0%, oklch(0.62 0.14 158) 45%, oklch(0.72 0.16 55) 100%);
+  --gradient-hero: linear-gradient(
+    135deg,
+    oklch(0.46 0.11 160) 0%,
+    oklch(0.62 0.14 158) 45%,
+    oklch(0.72 0.16 55) 100%
+  );
   --gradient-soft: linear-gradient(180deg, oklch(0.985 0.012 95) 0%, oklch(0.96 0.03 110) 100%);
   --shadow-soft: 0 10px 30px -12px color-mix(in oklab, oklch(0.46 0.11 160) 25%, transparent);
   --shadow-warm: 0 14px 40px -16px color-mix(in oklab, oklch(0.72 0.16 55) 35%, transparent);
@@ -169,7 +174,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
@@ -190,8 +198,14 @@
     animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-destructive) 55%, transparent); }
-    70% { box-shadow: 0 0 0 22px color-mix(in oklab, var(--color-destructive) 0%, transparent); }
-    100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-destructive) 0%, transparent); }
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-destructive) 55%, transparent);
+    }
+    70% {
+      box-shadow: 0 0 0 22px color-mix(in oklab, var(--color-destructive) 0%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-destructive) 0%, transparent);
+    }
   }
 }

@@ -61,13 +61,13 @@ This prototype does not require any environment variables to run locally. The ap
 
 If you extend the project with a real backend, you would add variables here following the patterns in `src/lib/config.server.ts`:
 
-| Variable | Scope | Description |
-|----------|-------|-------------|
-| `NODE_ENV` | Server | Runtime environment (development / production) |
-| `VITE_*` | Client + Server | Public configuration values (prefixed with `VITE_`) |
-| `DATABASE_URL` | Server | Database connection string (future) |
-| `SUPABASE_URL` | Server | Supabase project URL (future) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server | Supabase service role key (future) |
+| Variable                    | Scope           | Description                                         |
+| --------------------------- | --------------- | --------------------------------------------------- |
+| `NODE_ENV`                  | Server          | Runtime environment (development / production)      |
+| `VITE_*`                    | Client + Server | Public configuration values (prefixed with `VITE_`) |
+| `DATABASE_URL`              | Server          | Database connection string (future)                 |
+| `SUPABASE_URL`              | Server          | Supabase project URL (future)                       |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server          | Supabase service role key (future)                  |
 
 To add environment variables locally, create a `.env` file in the project root:
 
@@ -81,13 +81,13 @@ NODE_ENV=development
 
 ## Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `bun dev` | Start the development server |
-| `bun build` | Build for production |
+| Command       | Description                          |
+| ------------- | ------------------------------------ |
+| `bun dev`     | Start the development server         |
+| `bun build`   | Build for production                 |
 | `bun preview` | Preview the production build locally |
-| `bun lint` | Run ESLint |
-| `bun format` | Format code with Prettier |
+| `bun lint`    | Run ESLint                           |
+| `bun format`  | Format code with Prettier            |
 
 ## Project Structure
 
