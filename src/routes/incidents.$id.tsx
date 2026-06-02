@@ -97,22 +97,31 @@ function IncidentDetail() {
 
           <Card>
             <CardHeader><CardTitle className="text-base">Location</CardTitle></CardHeader>
-            <CardContent>
-              <div className="relative aspect-square overflow-hidden rounded-xl bg-gradient-to-br from-secondary to-background">
-                <div className="absolute inset-0 opacity-50" style={{
-                  backgroundImage: "linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                }} />
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-warm pulse-ring">
-                    <MapPin className="h-5 w-5" />
-                  </span>
-                </div>
+            <CardContent className="space-y-3">
+              <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-gradient-to-br from-secondary/50 to-background shadow-inner">
+                {incident.location.lat !== 0 || incident.location.lng !== 0 ? (
+                  <iframe
+                    title="Incident Location Map"
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    scrolling="no"
+                    marginHeight={0}
+                    marginWidth={0}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${incident.location.lng - 0.012}%2C${incident.location.lat - 0.006}%2C${incident.location.lng + 0.012}%2C${incident.location.lat + 0.006}&layer=mapnik&marker=${incident.location.lat}%2C${incident.location.lng}`}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                    <MapPin className="h-8 w-8 text-muted-foreground/60 mb-2 animate-bounce" />
+                    <span className="text-xs text-muted-foreground">Coordinates not available</span>
+                  </div>
+                )}
               </div>
-              <div className="mt-3 text-sm">
-                <div className="font-medium">{incident.location.label}</div>
-                <div className="text-xs text-muted-foreground">
-                  {incident.location.lat.toFixed(4)}, {incident.location.lng.toFixed(4)}
+              <div className="text-sm">
+                <div className="font-medium">{incident.location.label || "Live Coordinates"}</div>
+                <div className="text-xs text-muted-foreground font-mono">
+                  {incident.location.lat.toFixed(5)}, {incident.location.lng.toFixed(5)}
                 </div>
               </div>
             </CardContent>
