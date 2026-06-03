@@ -29,12 +29,7 @@ const MAP: Record<
 export function StatusBadge({ status, score }: { status: SafetyStatus; score: number }) {
   const { label, sub, cls, Icon } = MAP[status];
   return (
-    <div
-      className={cn(
-        "rounded-2xl border bg-gradient-to-br p-6 transition-colors",
-        cls,
-      )}
-    >
+    <div className={cn("rounded-2xl border bg-gradient-to-br p-6 transition-colors", cls)}>
       <div className="flex items-center gap-4">
         <span className="grid h-14 w-14 place-items-center rounded-2xl bg-background/70 shadow-soft">
           <Icon className="h-7 w-7" />

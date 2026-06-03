@@ -48,7 +48,7 @@ function SettingsPage() {
         setLoadingLocation(false);
         toast.error("Failed to access GPS. Please check browser permissions.");
       },
-      { timeout: 8000 }
+      { timeout: 8000 },
     );
   }
 
@@ -62,13 +62,20 @@ function SettingsPage() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Profile</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Profile</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>Display name</Label>
               <Input
                 value={settings.profile.name}
-                onChange={(e) => setSettings({ ...settings, profile: { ...settings.profile, name: e.target.value } })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    profile: { ...settings.profile, name: e.target.value },
+                  })
+                }
                 placeholder="Your name"
               />
             </div>
@@ -77,7 +84,12 @@ function SettingsPage() {
                 <Label>Medical note (shared during an incident)</Label>
                 <Textarea
                   value={settings.profile.medicalNote}
-                  onChange={(e) => setSettings({ ...settings, profile: { ...settings.profile, medicalNote: e.target.value } })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: { ...settings.profile, medicalNote: e.target.value },
+                    })
+                  }
                   placeholder="Allergies, conditions, etc."
                   rows={3}
                 />
@@ -86,7 +98,12 @@ function SettingsPage() {
                 <Label>Blood type</Label>
                 <Input
                   value={settings.profile.bloodType}
-                  onChange={(e) => setSettings({ ...settings, profile: { ...settings.profile, bloodType: e.target.value } })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: { ...settings.profile, bloodType: e.target.value },
+                    })
+                  }
                   placeholder="O+"
                 />
               </div>
@@ -95,22 +112,26 @@ function SettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Location settings</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Location settings</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-sm font-semibold">User location</Label>
-                  <div className="text-xs text-muted-foreground">Manage your GPS coordinates for incident response.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Manage your GPS coordinates for incident response.
+                  </div>
                 </div>
-                <Button 
-                  onClick={syncLocation} 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  onClick={syncLocation}
+                  variant="outline"
+                  size="sm"
                   disabled={loadingLocation}
                   className="flex items-center gap-1.5"
                 >
-                  <Compass className={`h-4 w-4 ${loadingLocation ? 'animate-spin' : ''}`} />
+                  <Compass className={`h-4 w-4 ${loadingLocation ? "animate-spin" : ""}`} />
                   {loadingLocation ? "Syncing..." : "Sync GPS"}
                 </Button>
               </div>
@@ -149,55 +170,77 @@ function SettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Detection sensitivity</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Detection sensitivity</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-6">
             <Sense
               label="Audio threshold"
               hint="Higher = louder noise needed to trigger"
               value={settings.thresholds.audio}
-              min={0.2} max={1} step={0.05}
-              onChange={(v) => setSettings({ ...settings, thresholds: { ...settings.thresholds, audio: v } })}
+              min={0.2}
+              max={1}
+              step={0.05}
+              onChange={(v) =>
+                setSettings({ ...settings, thresholds: { ...settings.thresholds, audio: v } })
+              }
               display={`${Math.round(settings.thresholds.audio * 100)}%`}
             />
             <Sense
               label="Motion threshold"
               hint="Sudden movement / fall sensitivity"
               value={settings.thresholds.motion}
-              min={0.2} max={1} step={0.05}
-              onChange={(v) => setSettings({ ...settings, thresholds: { ...settings.thresholds, motion: v } })}
+              min={0.2}
+              max={1}
+              step={0.05}
+              onChange={(v) =>
+                setSettings({ ...settings, thresholds: { ...settings.thresholds, motion: v } })
+              }
               display={`${Math.round(settings.thresholds.motion * 100)}%`}
             />
             <Sense
               label="Heart-rate threshold"
               hint="Bpm at which we flag a spike"
               value={settings.thresholds.bpm}
-              min={100} max={180} step={5}
-              onChange={(v) => setSettings({ ...settings, thresholds: { ...settings.thresholds, bpm: v } })}
+              min={100}
+              max={180}
+              step={5}
+              onChange={(v) =>
+                setSettings({ ...settings, thresholds: { ...settings.thresholds, bpm: v } })
+              }
               display={`${settings.thresholds.bpm} bpm`}
             />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Alert channels</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Alert channels</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <Toggle
               label="SMS"
               hint="Text message to your trusted contacts"
               checked={settings.channels.sms}
-              onChange={(v) => setSettings({ ...settings, channels: { ...settings.channels, sms: v } })}
+              onChange={(v) =>
+                setSettings({ ...settings, channels: { ...settings.channels, sms: v } })
+              }
             />
             <Toggle
               label="WhatsApp"
               hint="WhatsApp message with live location"
               checked={settings.channels.whatsapp}
-              onChange={(v) => setSettings({ ...settings, channels: { ...settings.channels, whatsapp: v } })}
+              onChange={(v) =>
+                setSettings({ ...settings, channels: { ...settings.channels, whatsapp: v } })
+              }
             />
             <Toggle
               label="In-app push"
               hint="Notification in this app"
               checked={settings.channels.inapp}
-              onChange={(v) => setSettings({ ...settings, channels: { ...settings.channels, inapp: v } })}
+              onChange={(v) =>
+                setSettings({ ...settings, channels: { ...settings.channels, inapp: v } })
+              }
             />
           </CardContent>
         </Card>
@@ -210,9 +253,24 @@ function SettingsPage() {
   );
 }
 
-function Sense({ label, hint, value, min, max, step, onChange, display }: {
-  label: string; hint: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; display: string;
+function Sense({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  display,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  display: string;
 }) {
   return (
     <div>
@@ -223,12 +281,28 @@ function Sense({ label, hint, value, min, max, step, onChange, display }: {
         </div>
         <span className="font-display text-lg text-primary">{display}</span>
       </div>
-      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} />
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([v]) => onChange(v)}
+      />
     </div>
   );
 }
 
-function Toggle({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between rounded-lg border border-border p-3">
       <div>
