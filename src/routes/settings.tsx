@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -249,7 +250,41 @@ function SettingsPage() {
         </Card>
 
         <div className="flex justify-end">
-          <Button onClick={() => toast.success("Settings saved")}>Save</Button>
+          <Button
+            onClick={async () => {
+              const {
+                data: { session },
+              } = await supabase.auth.getSession();
+              if (!session) {
+                toast.error("Please sign in to save settings");
+                return;
+              }
+              try {
+                const { error: settingsError } = await supabase.from("user_settings").upsert({
+                  user_id: session.user.id,
+                  thresholds: settings.thresholds,
+                  channels: settings.channels,
+                });
+                if (settingsError) throw settingsError;
+
+                const { error: profileError } = await supabase.from("profiles").upsert({
+                  id: session.user.id,
+                  name: settings.profile.name,
+                  medical_note: settings.profile.medicalNote,
+                  blood_type: settings.profile.bloodType,
+                });
+                if (profileError) throw profileError;
+
+                toast.success("Settings saved to cloud");
+              } catch (error) {
+                toast.error(
+                  "Failed to save: " + (error instanceof Error ? error.message : "Unknown error"),
+                );
+              }
+            }}
+          >
+            Save
+          </Button>
         </div>
       </main>
     </div>

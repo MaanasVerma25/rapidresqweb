@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -24,18 +25,33 @@ function ContactsPage() {
   const { contacts, upsert, remove, setPrimary } = useContacts();
   const [form, setForm] = useState({ name: "", phone: "", relationship: "" });
 
-  function add() {
+  async function add() {
     if (!form.name.trim() || !form.phone.trim()) {
       toast.error("Name and phone are required");
       return;
     }
-    upsert({
+    const newC = {
       id: `c_${Date.now()}`,
       name: form.name.trim(),
       phone: form.phone.trim(),
       relationship: form.relationship.trim() || "Contact",
       primary: contacts.length === 0,
-    });
+    };
+    upsert(newC);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.from("contacts").insert({
+        user_id: session.user.id,
+        name: newC.name,
+        phone: newC.phone,
+        relationship: newC.relationship,
+        is_primary: newC.primary,
+      });
+    }
+
     setForm({ name: "", phone: "", relationship: "" });
     toast.success("Contact added");
   }
@@ -126,8 +142,18 @@ function ContactsPage() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => {
+                    onClick={async () => {
                       remove(c.id);
+                      const {
+                        data: { session },
+                      } = await supabase.auth.getSession();
+                      if (session) {
+                        await supabase
+                          .from("contacts")
+                          .delete()
+                          .eq("name", c.name)
+                          .eq("user_id", session.user.id);
+                      }
                       toast("Contact removed");
                     }}
                     aria-label="Remove"

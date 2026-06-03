@@ -25,6 +25,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useContacts, useSettings, useLocation } from "@/hooks/use-persistent";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import type { Contact } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { User } from "@supabase/supabase-js";
+import { Auth } from "@/components/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,6 +51,8 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // 1. Detect if already onboarded
   const [isOnboarded, setIsOnboarded] = useState(() => {
@@ -58,10 +63,25 @@ function Landing() {
   });
 
   useEffect(() => {
-    if (isOnboarded) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (isOnboarded && user) {
       navigate({ to: "/dashboard", replace: true });
     }
-  }, [isOnboarded, navigate]);
+  }, [isOnboarded, navigate, user]);
 
   // 2. Load persistent states
   const { settings, setSettings } = useSettings();
@@ -101,71 +121,32 @@ function Landing() {
     if (geoLoc) {
       setCoords(geoLoc);
       setLocationStatus("granted");
-      toast.success("Location synchronized successfully!");
     }
   }, [geoLoc]);
 
   useEffect(() => {
     if (geoErr) {
-      setLocationStatus("denied");
       toast.error(geoErr);
+      setLocationStatus("denied");
     }
   }, [geoErr]);
 
-  useEffect(() => {
-    if (geoLoading) {
-      setLocationStatus("requesting");
-    }
-  }, [geoLoading]);
-
-  if (isOnboarded) {
-    return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Sparkles className="h-8 w-8 animate-pulse text-primary" />
+      </div>
+    );
   }
 
-  // Handle addition of contact in Step 2
-  function handleAddContact() {
-    if (!newContact.name.trim() || !newContact.phone.trim()) {
-      toast.error("Name and phone number are required");
-      return;
-    }
-
-    const added: Contact = {
-      id: `c_${Date.now()}`,
-      name: newContact.name.trim(),
-      phone: newContact.phone.trim(),
-      relationship: newContact.relationship.trim() || "Contact",
-      primary: localContacts.length === 0,
-    };
-
-    setLocalContacts([...localContacts, added]);
-    setNewContact({ name: "", phone: "", relationship: "" });
-    toast.success("Contact added locally");
+  if (!user) {
+    return <Auth />;
   }
 
-  function handleRemoveContact(id: string) {
-    const updated = localContacts.filter((c) => c.id !== id);
-    // If we removed the primary contact, make the first remaining one primary
-    if (updated.length > 0 && !updated.some((c) => c.primary)) {
-      updated[0].primary = true;
-    }
-    setLocalContacts(updated);
-    toast.success("Contact removed");
-  }
-
-  function handleSetPrimaryContact(id: string) {
-    setLocalContacts(localContacts.map((c) => ({ ...c, primary: c.id === id })));
-    toast.success("Primary contact updated");
-  }
-
-  // Request browser GPS permissions
-  function requestLocation() {
-    getPosition();
-  }
-
-  // Navigate forward in the wizard
+  // Next step handler with validation
   function handleNextStep() {
     if (step === 1 && !formSettings.profile.name.trim()) {
-      toast.error("Please enter your display name");
+      toast.error("Please enter your name");
       return;
     }
     if (step === 2 && localContacts.length === 0) {
@@ -176,24 +157,64 @@ function Landing() {
   }
 
   // Save everything and complete onboarding
-  function completeOnboarding() {
-    // 1. Save settings
-    setSettings(formSettings);
+  async function completeOnboarding() {
+    if (!user) return;
 
-    // 2. Save contacts to persistent storage
-    contacts.forEach((c) => remove(c.id));
-    localContacts.forEach((c) => upsert(c));
+    try {
+      // 1. Save settings
+      setSettings(formSettings);
 
-    // 3. Persist GPS location
-    persistLocation(coords);
+      // Save to Supabase
+      const { error: settingsError } = await supabase.from("user_settings").upsert({
+        user_id: user.id,
+        thresholds: formSettings.thresholds,
+        channels: formSettings.channels,
+      });
+      if (settingsError) throw settingsError;
 
-    // 4. Set onboarded in localStorage
-    localStorage.setItem("rapidresq:onboarded", "true");
-    setIsOnboarded(true);
+      // 2. Save profile
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: user.id,
+        name: formSettings.profile.name,
+        medical_note: formSettings.profile.medicalNote,
+        blood_type: formSettings.profile.bloodType,
+      });
+      if (profileError) throw profileError;
 
-    toast.success("RapidResQ configuration activated!", {
-      description: "You are now protected. Live detection is running.",
-    });
+      // 3. Save contacts
+      contacts.forEach((c) => remove(c.id));
+      localContacts.forEach((c) => upsert(c));
+
+      // Save to Supabase (delete old ones first for simplicity in this flow)
+      await supabase.from("contacts").delete().eq("user_id", user.id);
+      const { error: contactsError } = await supabase.from("contacts").insert(
+        localContacts.map((c) => ({
+          user_id: user.id,
+          name: c.name,
+          phone: c.phone,
+          relationship: c.relationship,
+          is_primary: c.primary || false,
+        })),
+      );
+      if (contactsError) throw contactsError;
+
+      // 4. Persist GPS location
+      persistLocation(coords);
+
+      // 5. Set onboarded in localStorage
+      localStorage.setItem("rapidresq:onboarded", "true");
+      setIsOnboarded(true);
+      navigate({ to: "/dashboard", replace: true });
+
+      toast.success("RapidResQ configuration activated!", {
+        description: "You are now protected. Live detection is running.",
+      });
+    } catch (error) {
+      toast.error(
+        "Failed to save configuration: " +
+          (error instanceof Error ? error.message : "Unknown error"),
+      );
+    }
   }
 
   // Render Functions
@@ -255,9 +276,9 @@ function Landing() {
                     profile: { ...formSettings.profile, medicalNote: e.target.value },
                   })
                 }
-                placeholder="Allergies, chronic conditions, etc."
-                className="rounded-xl"
-                rows={2}
+                placeholder="e.g. Diabetic, allergic to penicillin..."
+                className="rounded-xl resize-none"
+                rows={3}
               />
             </div>
           </div>
@@ -267,119 +288,103 @@ function Landing() {
   }
 
   function renderStep2() {
+    const addContact = () => {
+      if (!newContact.name || !newContact.phone) {
+        toast.error("Name and phone are required");
+        return;
+      }
+      const c: Contact = {
+        id: Math.random().toString(36).substr(2, 9),
+        ...newContact,
+        primary: localContacts.length === 0,
+      };
+      setLocalContacts([...localContacts, c]);
+      setNewContact({ name: "", phone: "", relationship: "" });
+    };
+
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Trusted Contacts</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Emergency Contacts</h2>
           <p className="text-sm text-muted-foreground">
-            Add people you trust. They will be alerted immediately if a danger signal is detected.
+            Who should we alert when we detect trouble?
           </p>
         </div>
 
-        {/* Contact Input Form */}
-        <div className="border border-border/80 rounded-2xl p-4 bg-secondary/30 space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="contactName" className="text-xs">
-                Name
-              </Label>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Name</Label>
               <Input
-                id="contactName"
                 value={newContact.name}
                 onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                placeholder="e.g. Mom"
-                className="rounded-lg h-9 text-sm"
+                placeholder="Name"
+                className="h-10 rounded-lg"
               />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="contactPhone" className="text-xs">
-                Phone Number
-              </Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Phone</Label>
               <Input
-                id="contactPhone"
                 value={newContact.phone}
                 onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                placeholder="+1 555 0100"
-                className="rounded-lg h-9 text-sm"
+                placeholder="+1..."
+                className="h-10 rounded-lg"
               />
             </div>
           </div>
-          <div className="flex gap-2 items-end">
-            <div className="space-y-1 flex-grow">
-              <Label htmlFor="contactRel" className="text-xs">
-                Relationship
-              </Label>
-              <Input
-                id="contactRel"
-                value={newContact.relationship}
-                onChange={(e) => setNewContact({ ...newContact, relationship: e.target.value })}
-                placeholder="Family / Friend"
-                className="rounded-lg h-9 text-sm"
-              />
-            </div>
+          <div className="flex gap-2">
+            <Input
+              value={newContact.relationship}
+              onChange={(e) => setNewContact({ ...newContact, relationship: e.target.value })}
+              placeholder="Relationship (e.g. Sister, Roommate)"
+              className="h-10 rounded-lg"
+            />
             <Button
-              onClick={handleAddContact}
-              size="sm"
-              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground"
+              onClick={addContact}
+              variant="outline"
+              size="icon"
+              className="shrink-0 h-10 w-10"
             >
-              <Plus className="mr-1 h-4 w-4" /> Add
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Contacts List */}
-        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-          {localContacts.length === 0 ? (
-            <div className="text-center p-6 border border-dashed border-border rounded-2xl text-muted-foreground text-sm">
-              No contacts added yet. Add at least one contact above.
+        <div className="space-y-2 mt-4">
+          {localContacts.length === 0 && (
+            <div className="text-center py-8 border border-dashed rounded-2xl bg-secondary/20">
+              <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
+              <p className="text-xs text-muted-foreground">No contacts added yet</p>
             </div>
-          ) : (
-            localContacts.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between border border-border/60 rounded-xl p-3 bg-card shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-gradient-hero flex items-center justify-center text-primary-foreground font-semibold font-display text-sm">
-                    {c.name[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium flex items-center gap-1.5">
-                      {c.name}
-                      {c.primary && (
-                        <span className="text-[10px] bg-accent/15 text-accent px-1.5 py-0.5 rounded-full font-medium">
-                          Primary
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {c.phone} · {c.relationship}
-                    </div>
-                  </div>
+          )}
+          {localContacts.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center justify-between p-3 rounded-xl border bg-card/50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                  {c.name[0]}
                 </div>
-                <div className="flex items-center gap-1">
-                  {!c.primary && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleSetPrimaryContact(c.id)}
-                    >
-                      <Star className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRemoveContact(c.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                <div>
+                  <div className="text-sm font-medium flex items-center gap-1.5">
+                    {c.name} {c.primary && <Star className="h-3 w-3 fill-accent text-accent" />}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {c.relationship} • {c.phone}
+                  </div>
                 </div>
               </div>
-            ))
-          )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive"
+                onClick={() => setLocalContacts(localContacts.filter((x) => x.id !== c.id))}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -389,57 +394,38 @@ function Landing() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Location Monitoring</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Location Access</h2>
           <p className="text-sm text-muted-foreground">
-            RapidResQ shares your coordinates with emergency contacts when danger is detected.
+            We need your real-time location to send help precisely where you are.
           </p>
         </div>
 
-        <div className="border border-border/80 rounded-2xl p-6 bg-secondary/20 flex flex-col items-center justify-center text-center space-y-4">
-          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <MapPin className="h-8 w-8 animate-pulse" />
-          </div>
+        <div className="flex flex-col items-center justify-center text-center space-y-4 py-4">
           {locationStatus === "idle" && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-base">Enable Location Services</h3>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                Allow browser geolocation to enable live tracking in case of emergency alerts.
-              </p>
-              <Button onClick={requestLocation} className="mt-2" variant="outline">
-                <Compass className="mr-1.5 h-4 w-4" /> Authorize GPS Access
+            <div className="space-y-4">
+              <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center mx-auto">
+                <MapPin className="h-10 w-10 text-primary" />
+              </div>
+              <Button onClick={() => getPosition()} className="rounded-full px-8">
+                Allow Location Access
               </Button>
             </div>
           )}
+
           {locationStatus === "requesting" && (
             <div className="space-y-2">
-              <h3 className="font-semibold text-base animate-pulse">Requesting GPS Access...</h3>
-              <p className="text-xs text-muted-foreground">
-                Please accept the location prompt in your browser.
-              </p>
+              <Compass className="h-10 w-10 text-primary animate-spin mx-auto" />
+              <p className="text-sm">Acquiring satellite signal...</p>
             </div>
           )}
-          {locationStatus === "granted" && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-base text-success flex items-center justify-center gap-1">
-                <CheckCircle className="h-4.5 w-4.5 text-success fill-success/10" /> GPS Access
-                Granted
-              </h3>
-              <p className="text-xs text-muted-foreground font-mono bg-card px-3 py-1.5 border rounded-lg inline-block">
-                Lat: {coords.lat.toFixed(5)}, Lng: {coords.lng.toFixed(5)}
-              </p>
-              <p className="text-[10px] text-muted-foreground block">
-                Detected address: {coords.label}
-              </p>
-            </div>
-          )}
+
           {locationStatus === "denied" && (
-            <div className="space-y-2 w-full">
-              <h3 className="font-semibold text-base text-destructive">Location Access Denied</h3>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                No problem. You can configure a mock backup location for simulation purposes.
+            <div className="w-full space-y-4">
+              <p className="text-sm text-destructive font-medium bg-destructive/5 p-3 rounded-xl">
+                Location access was denied. Please provide a mock location for this prototype.
               </p>
-              <div className="grid grid-cols-2 gap-2 pt-2 text-left">
-                <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1 text-left">
                   <Label htmlFor="mockLat" className="text-xs font-semibold">
                     Latitude
                   </Label>
@@ -452,7 +438,7 @@ function Landing() {
                     className="rounded-lg h-9 text-xs"
                   />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 text-left">
                   <Label htmlFor="mockLng" className="text-xs font-semibold">
                     Longitude
                   </Label>
