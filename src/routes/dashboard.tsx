@@ -1,7 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Mic, Activity, HeartPulse, MapPin, Wind, Footprints, PersonStanding, AlertOctagon, Heart, X, Compass } from "lucide-react";
+import {
+  Mic,
+  Activity,
+  HeartPulse,
+  MapPin,
+  Wind,
+  Footprints,
+  PersonStanding,
+  AlertOctagon,
+  Heart,
+  X,
+  Compass,
+} from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { StatusBadge } from "@/components/status-badge";
 import { SOSButton } from "@/components/sos-button";
@@ -11,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSafetySignals } from "@/hooks/use-safety-signals";
 import { useContacts, useIncidents, useSettings, useLocation } from "@/hooks/use-persistent";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import type { Incident, Scenario } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard")({
@@ -36,7 +49,10 @@ function Dashboard() {
   const { settings } = useSettings();
   const { contacts } = useContacts();
   const { incidents, add } = useIncidents();
-  const { location: userLocation } = useLocation();
+  const { location: persistedLocation } = useLocation();
+  const { location: liveLocation } = useGeolocation({ autoWatch: true, enableHighAccuracy: true });
+  const userLocation = liveLocation || persistedLocation;
+
   const [enabled] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const { samples, latest, status, scenario, setScenario } = useSafetySignals({
@@ -44,12 +60,15 @@ function Dashboard() {
     enabled,
   });
 
-  const series = useMemo(() => ({
-    audio: samples.map((s) => s.audio),
-    motion: samples.map((s) => s.motion),
-    bpm: samples.map((s) => (s.bpm - 60) / 120),
-    score: samples.map((s) => s.score),
-  }), [samples]);
+  const series = useMemo(
+    () => ({
+      audio: samples.map((s) => s.audio),
+      motion: samples.map((s) => s.motion),
+      bpm: samples.map((s) => (s.bpm - 60) / 120),
+      score: samples.map((s) => s.score),
+    }),
+    [samples],
+  );
 
   const recent = incidents[0];
 
@@ -77,7 +96,11 @@ function Dashboard() {
       trigger,
       status: "active",
       peakScore,
-      location: { lat: userLocation.lat, lng: userLocation.lng, label: userLocation.label || "Last known location" },
+      location: {
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        label: userLocation.label || "Last known location",
+      },
       signalTrace: samples.slice(-30),
       alerts,
     };
@@ -94,7 +117,9 @@ function Dashboard() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Live status</div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">
+              Live status
+            </div>
             <h1 className="font-display text-3xl font-semibold sm:text-4xl">
               Hello{settings.profile.name ? `, ${settings.profile.name}` : ""}
             </h1>
@@ -144,10 +169,10 @@ function Dashboard() {
                       <MapPin className="h-4 w-4" />
                     </span>
                     <div className="flex-1">
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground">Location</div>
-                      <div className="font-display text-xl font-semibold">
-                        Live
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                        Location
                       </div>
+                      <div className="font-display text-xl font-semibold">Live</div>
                     </div>
                   </div>
                   <div className="mt-3 text-[10px] text-muted-foreground truncate">
@@ -166,7 +191,12 @@ function Dashboard() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary" /> Your Current Location
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowMap(false)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setShowMap(false)}
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </CardHeader>
@@ -188,7 +218,9 @@ function Dashboard() {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <div>
-                          <div className="font-medium">{userLocation.label || "Last known location"}</div>
+                          <div className="font-medium">
+                            {userLocation.label || "Last known location"}
+                          </div>
                           <div className="text-xs text-muted-foreground font-mono">
                             {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
                           </div>
@@ -215,8 +247,8 @@ function Dashboard() {
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  Inject a behavioural pattern to see how RapidResQ reacts. Sustained high-anomaly states
-                  will auto-trigger an incident.
+                  Inject a behavioural pattern to see how RapidResQ reacts. Sustained high-anomaly
+                  states will auto-trigger an incident.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {SCENARIOS.map(({ id, label, icon: Icon }) => (
@@ -227,7 +259,8 @@ function Dashboard() {
                       onClick={() => {
                         setScenario(id);
                         toast(`Simulating: ${label}`, {
-                          description: id === "normal" ? "Returning to baseline." : "Watching for anomaly...",
+                          description:
+                            id === "normal" ? "Returning to baseline." : "Watching for anomaly...",
                         });
                       }}
                     >
@@ -256,13 +289,16 @@ function Dashboard() {
                     className="block w-full rounded-xl border border-border p-4 text-left transition-colors hover:bg-secondary/60"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-medium capitalize">{recent.trigger.replace("-", " ")}</div>
+                      <div className="font-medium capitalize">
+                        {recent.trigger.replace("-", " ")}
+                      </div>
                       <Badge variant={recent.status === "active" ? "destructive" : "secondary"}>
                         {recent.status}
                       </Badge>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {new Date(recent.startedAt).toLocaleString()} · {recent.alerts.length} alerts sent
+                      {new Date(recent.startedAt).toLocaleString()} · {recent.alerts.length} alerts
+                      sent
                     </div>
                   </button>
                 ) : (

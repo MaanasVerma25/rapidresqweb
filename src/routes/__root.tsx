@@ -74,15 +74,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "RapidResQ — AI-powered women's safety" },
-      { name: "description", content: "RapidResQ detects danger automatically and rallies your trusted network in seconds." },
+      {
+        name: "description",
+        content:
+          "RapidResQ detects danger automatically and rallies your trusted network in seconds.",
+      },
       { property: "og:title", content: "RapidResQ — AI-powered women's safety" },
-      { property: "og:description", content: "RapidResQ detects danger automatically and rallies your trusted network in seconds." },
+      {
+        property: "og:description",
+        content:
+          "RapidResQ detects danger automatically and rallies your trusted network in seconds.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "RapidResQ — AI-powered women's safety" },
-      { name: "twitter:description", content: "RapidResQ detects danger automatically and rallies your trusted network in seconds." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d34f009e-d122-4074-818a-3c4dae9e97be" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d34f009e-d122-4074-818a-3c4dae9e97be" },
+      {
+        name: "twitter:description",
+        content:
+          "RapidResQ detects danger automatically and rallies your trusted network in seconds.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d34f009e-d122-4074-818a-3c4dae9e97be",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d34f009e-d122-4074-818a-3c4dae9e97be",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

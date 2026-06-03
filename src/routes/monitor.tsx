@@ -11,7 +11,10 @@ export const Route = createFileRoute("/monitor")({
   head: () => ({
     meta: [
       { title: "Live monitor · RapidResQ" },
-      { name: "description", content: "Live anomaly detection across audio, motion, and heart-rate signals." },
+      {
+        name: "description",
+        content: "Live anomaly detection across audio, motion, and heart-rate signals.",
+      },
     ],
   }),
   component: MonitorPage,
@@ -34,10 +37,14 @@ function MonitorPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-semibold sm:text-4xl">Live monitor</h1>
-            <p className="mt-1 text-muted-foreground">Behavioural, audio, and physiological streams.</p>
+            <p className="mt-1 text-muted-foreground">
+              Behavioural, audio, and physiological streams.
+            </p>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
-            <Label htmlFor="det" className="text-sm">Detection</Label>
+            <Label htmlFor="det" className="text-sm">
+              Detection
+            </Label>
             <Switch id="det" checked={enabled} onCheckedChange={setEnabled} />
           </div>
         </div>
@@ -56,10 +63,34 @@ function MonitorPage() {
         </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <StreamCard title="Audio (scream / keyword)" unit="%" value={Math.round(latest.audio * 100)} series={audio} color="var(--color-accent)" />
-          <StreamCard title="Motion (accelerometer)" unit="%" value={Math.round(latest.motion * 100)} series={motion} color="var(--color-primary)" />
-          <StreamCard title="Heart rate" unit="bpm" value={latest.bpm} series={bpm.map((v) => (v - 60) / 120)} color="var(--color-destructive)" />
-          <StreamCard title="Composite score" unit="%" value={Math.round(latest.score * 100)} series={score} color="var(--color-success)" />
+          <StreamCard
+            title="Audio (scream / keyword)"
+            unit="%"
+            value={Math.round(latest.audio * 100)}
+            series={audio}
+            color="var(--color-accent)"
+          />
+          <StreamCard
+            title="Motion (accelerometer)"
+            unit="%"
+            value={Math.round(latest.motion * 100)}
+            series={motion}
+            color="var(--color-primary)"
+          />
+          <StreamCard
+            title="Heart rate"
+            unit="bpm"
+            value={latest.bpm}
+            series={bpm.map((v) => (v - 60) / 120)}
+            color="var(--color-destructive)"
+          />
+          <StreamCard
+            title="Composite score"
+            unit="%"
+            value={Math.round(latest.score * 100)}
+            series={score}
+            color="var(--color-success)"
+          />
         </div>
       </main>
     </div>
@@ -79,25 +110,42 @@ function Gauge({ value }: { value: number }) {
               value > 0.85
                 ? "var(--color-destructive)"
                 : value > 0.55
-                ? "var(--color-warning)"
-                : "var(--color-success)",
+                  ? "var(--color-warning)"
+                  : "var(--color-success)",
           }}
         />
       </div>
       <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-        <span>Safe</span><span>Elevated</span><span>Critical</span>
+        <span>Safe</span>
+        <span>Elevated</span>
+        <span>Critical</span>
       </div>
     </div>
   );
 }
 
-function StreamCard({ title, unit, value, series, color }: { title: string; unit: string; value: number; series: number[]; color: string }) {
+function StreamCard({
+  title,
+  unit,
+  value,
+  series,
+  color,
+}: {
+  title: string;
+  unit: string;
+  value: number;
+  series: number[];
+  color: string;
+}) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-base">
           <span>{title}</span>
-          <span className="font-display text-2xl">{value}<span className="ml-1 text-sm font-normal text-muted-foreground">{unit}</span></span>
+          <span className="font-display text-2xl">
+            {value}
+            <span className="ml-1 text-sm font-normal text-muted-foreground">{unit}</span>
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -125,7 +173,14 @@ function AreaChart({ series, stroke, fill }: { series: number[]; stroke: string;
         </linearGradient>
       </defs>
       <polygon points={area} fill={`url(#${gradId})`} />
-      <polyline points={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline
+        points={line}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

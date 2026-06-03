@@ -31,14 +31,18 @@ export function SignalTile({ label, value, unit, Icon, series, tone = "primary" 
     <Card className="overflow-hidden">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
-          <span className={cn("grid h-9 w-9 place-items-center rounded-lg bg-secondary", TONE[tone])}>
+          <span
+            className={cn("grid h-9 w-9 place-items-center rounded-lg bg-secondary", TONE[tone])}
+          >
             <Icon className="h-4 w-4" />
           </span>
           <div className="flex-1">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
             <div className="font-display text-xl font-semibold">
               {value}
-              {unit && <span className="ml-1 text-sm font-normal text-muted-foreground">{unit}</span>}
+              {unit && (
+                <span className="ml-1 text-sm font-normal text-muted-foreground">{unit}</span>
+              )}
             </div>
           </div>
         </div>
