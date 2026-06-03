@@ -1,5 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Shield, LayoutDashboard, Activity, Users, History, Settings as SettingsIcon } from "lucide-react";
+import {
+  Shield,
+  LayoutDashboard,
+  Activity,
+  Users,
+  History,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [

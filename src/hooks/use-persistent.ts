@@ -60,4 +60,3 @@ export function useLocation() {
   useEffect(() => saveJSON(STORAGE_KEYS.location, location), [location]);
   return { location, setLocation };
 }
-
